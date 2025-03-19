@@ -2,7 +2,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/ottosmops/xmltoolkit/badge.svg?branch=main)](https://coveralls.io/github/ottosmops/xmltoolkit?branch=main)
 [![Latest Stable Version](https://poser.pugx.org/ottosmops/xmltoolkit/v/stable)](https://packagist.org/packages/ottosmops/xmltoolkit)
 [![License](https://poser.pugx.org/ottosmops/xmltoolkit/license)](https://packagist.org/packages/ottosmops/xmltoolkit)
-[![Total Downloads](http://poser.pugx.org/phpunit/phpunit/downloads)](https://packagist.org/packages/ottosmops/xmltoolkit)
+[![Total Downloads](http://poser.pugx.org/ottosmops/xmltoolkit/downloads)](https://packagist.org/packages/ottosmops/xmltoolkit)
 
 Xmltoolkit is a PHP class that provides various utilities for manipulating XML documents. It allows loading XML from files or strings, performing XPath queries, and modifying XML elements and attributes.
 
