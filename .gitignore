@@ -3,6 +3,7 @@ phpunit.xml
 .phpunit.cache
 .phpunit.result.cache
 report
+composer.lock
 
 ##### MacOS
 # General
