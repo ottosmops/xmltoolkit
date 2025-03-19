@@ -1,0 +1,15 @@
+.qodo
+phpunit.xml
+.phpunit.cache
+.phpunit.result.cache
+report
+
+##### MacOS
+# General
+.DS_Store
+.AppleDouble
+.LSOverride
+
+##### Composer
+composer.phar
+/vendor/
