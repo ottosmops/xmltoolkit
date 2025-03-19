@@ -1,6 +1,4 @@
-[![Build Status](https://github.com/ottosmops/xmltoolkit/actions/workflows/ci.yml/badge.svg)](https://github.com/ottosmops/xmltoolkit/actions)
-[![Coverage Status](https://coveralls.io/repos/github/ottosmops/xmltoolkit/badge.svg?branch=main)](https://coveralls.io/github/ottosmops/xmltoolkit?branch=main)
-[![Latest Stable Version](https://poser.pugx.org/ottosmops/xmltoolkit/v/stable)](https://packagist.org/packages/ottosmops/xmltoolkit)
+[![Build Status](https://github.com/ottosmops/xmltoolkit/actions/workflows/ci.yaml/badge.svg)](https://github.com/ottosmops/xmltoolkit/actions)
 [![License](https://poser.pugx.org/ottosmops/xmltoolkit/license)](https://packagist.org/packages/ottosmops/xmltoolkit)
 [![Total Downloads](http://poser.pugx.org/ottosmops/xmltoolkit/downloads)](https://packagist.org/packages/ottosmops/xmltoolkit)
 
