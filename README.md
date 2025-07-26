@@ -2,7 +2,8 @@
 [![License](https://poser.pugx.org/ottosmops/xmltoolkit/license)](https://packagist.org/packages/ottosmops/xmltoolkit)
 [![Total Downloads](http://poser.pugx.org/ottosmops/xmltoolkit/downloads)](https://packagist.org/packages/ottosmops/xmltoolkit)
 
-Xmltoolkit is a PHP class that provides various utilities for manipulating XML documents. It allows loading XML from files or strings, performing XPath queries, and modifying XML elements and attributes.
+
+Xmltoolkit is a PHP class that provides various utilities for manipulating XML documents. It allows loading XML from files or strings, performing XPath queries (with namespace support), and modifying XML elements and attributes.
 
 ## Installation
 
@@ -27,6 +28,17 @@ $xml->saveToFile('example.xml');
 
 ```
 
+## Namespace Support
+
+You can register XML namespaces for XPath queries:
+
+```php
+$xml = new Ottosmops\Xmltoolkit();
+$xml->registerNamespaces(['ns' => 'http://example.com/ns']);
+$xml->loadFromFile('example.xml');
+$nodes = $xml->queryXPath('//ns:tag');
+```
+
 ## Methods
 
 Load an XML file into the DOM object and ensure it is UTF-8 encoded.
@@ -41,7 +53,8 @@ Load an XML string into the DOM object and ensure it is UTF-8 encoded.
 public function loadFromString(string $xmlString): bool
 ```
 
-Load an XML/HTML Fragment 
+Load an XML/HTML Fragment
+
 ```php
 public function loadFromFragment(string $xmlFragment): bool
 ```

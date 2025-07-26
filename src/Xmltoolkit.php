@@ -5,8 +5,21 @@ namespace Ottosmops\Xmltoolkit;
 class Xmltoolkit
 {
     private $dom;
-
     private $xpath;
+    private $namespaces = [];
+    /**
+     * Register namespaces for XPath queries.
+     * @param array $namespaces ['prefix' => 'namespaceURI']
+     */
+    public function registerNamespaces(array $namespaces): void
+    {
+        $this->namespaces = $namespaces;
+        if ($this->xpath) {
+            foreach ($namespaces as $prefix => $uri) {
+                $this->xpath->registerNamespace($prefix, $uri);
+            }
+        }
+    }
 
     /**
      * Load an XML file into the DOM object and ensure it is UTF-8 encoded.
@@ -17,6 +30,11 @@ class Xmltoolkit
         $isLoaded = $this->dom->load($filePath);
         if ($isLoaded) {
             $this->xpath = new \DOMXPath($this->dom);
+            if (!empty($this->namespaces)) {
+                foreach ($this->namespaces as $prefix => $uri) {
+                    $this->xpath->registerNamespace($prefix, $uri);
+                }
+            }
         }
         return $isLoaded;
     }
@@ -30,6 +48,11 @@ class Xmltoolkit
         $isLoaded = $this->dom->loadXML($xmlString);
         if ($isLoaded) {
             $this->xpath = new \DOMXPath($this->dom);
+            if (!empty($this->namespaces)) {
+                foreach ($this->namespaces as $prefix => $uri) {
+                    $this->xpath->registerNamespace($prefix, $uri);
+                }
+            }
         }
         return $isLoaded;
     }
@@ -46,6 +69,11 @@ class Xmltoolkit
         
         if ($isLoaded) {
             $this->xpath = new \DOMXPath($this->dom);
+            if (!empty($this->namespaces)) {
+                foreach ($this->namespaces as $prefix => $uri) {
+                    $this->xpath->registerNamespace($prefix, $uri);
+                }
+            }
         }
         return $isLoaded;
     }

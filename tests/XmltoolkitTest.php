@@ -10,6 +10,15 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(Xmltoolkit::class)]
 class XmltoolkitTest extends TestCase
 {
+    public function testQueryXpathWithNamespace()
+    {
+        $xmlString = '<?xml version="1.0"?><root xmlns:ns="http://example.com/ns"><ns:tag>data</ns:tag></root>';
+        $this->xmltoolkit->registerNamespaces(['ns' => 'http://example.com/ns']);
+        $this->xmltoolkit->loadFromString($xmlString);
+        $result = $this->xmltoolkit->queryXPath('//ns:tag');
+        $this->assertCount(1, $result);
+        $this->assertStringContainsString('<ns:tag>data</ns:tag>', $result[0]);
+    }
     private $xmltoolkit;
 
     protected function setUp(): void
