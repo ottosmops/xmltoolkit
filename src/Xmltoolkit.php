@@ -8,6 +8,150 @@ class Xmltoolkit
     private $xpath;
     private $namespaces = [];
     /**
+     * Find elements by attribute value using regex.
+     * @return array of DOMElement
+     */
+    public function findElementsByAttributeRegex(string $attributeName, string $pattern): array
+    {
+        $xpathExpr = sprintf('//*[@%s]', $attributeName);
+        $nodes = $this->xpath->query($xpathExpr);
+        $result = [];
+        foreach ($nodes as $node) {
+            $value = $node->getAttribute($attributeName);
+            if (preg_match($pattern, $value)) {
+                $result[] = $node;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Replace attribute value using regex.
+     */
+    public function replaceAttributeValueRegex(string $attributeName, string $pattern, string $replacement): void
+    {
+        $nodes = $this->findElementsByAttributeRegex($attributeName, $pattern);
+        foreach ($nodes as $node) {
+            $value = $node->getAttribute($attributeName);
+            $newValue = preg_replace($pattern, $replacement, $value);
+            $node->setAttribute($attributeName, $newValue);
+        }
+    }
+
+    /**
+     * Find elements by text content using regex.
+     * @return array of DOMElement
+     */
+    public function findElementsByTextRegex(string $pattern): array
+    {
+        $nodes = $this->xpath->query('//*');
+        $result = [];
+        foreach ($nodes as $node) {
+            $hasElementChild = false;
+            foreach ($node->childNodes as $child) {
+                if ($child instanceof \DOMElement) {
+                    $hasElementChild = true;
+                    break;
+                }
+            }
+            if (!$hasElementChild && preg_match($pattern, $node->textContent)) {
+                $result[] = $node;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Replace text content using regex.
+     */
+    public function replaceElementTextRegex(string $pattern, string $replacement): void
+    {
+        $nodes = $this->findElementsByTextRegex($pattern);
+        foreach ($nodes as $node) {
+            $node->nodeValue = preg_replace($pattern, $replacement, $node->nodeValue);
+        }
+    }
+// ...existing code...
+    /**
+     * Returns the XML as a string and ensures it is UTF-8 encoded. Optionally pretty-printed.
+     */
+    public function saveToString(bool $prettyPrint = false): string
+    {
+        $this->dom->encoding = 'UTF-8';
+        if ($prettyPrint) {
+            $this->dom->preserveWhiteSpace = false;
+            $this->dom->formatOutput = true;
+        }
+        return $this->dom->saveXML();
+    }
+
+    /**
+     * Save the XML document to a file and ensure it is UTF-8 encoded. Optionally pretty-printed.
+     */
+    public function saveToFile(string $filePath, bool $prettyPrint = false): bool
+    {
+        $this->dom->encoding = 'UTF-8';
+        if ($prettyPrint) {
+            $this->dom->preserveWhiteSpace = false;
+            $this->dom->formatOutput = true;
+        }
+        return (bool) $this->dom->save($filePath);
+    }
+
+    /**
+     * Find elements by attribute value.
+     * @return array of DOMElement
+     */
+    public function findElementsByAttributeValue(string $attributeName, string $attributeValue): array
+    {
+        $xpathExpr = sprintf('//*[@%s="%s"]', $attributeName, $attributeValue);
+        $nodes = $this->xpath->query($xpathExpr);
+        $result = [];
+        foreach ($nodes as $node) {
+            $result[] = $node;
+        }
+        return $result;
+    }
+
+    /**
+     * Replace attribute value for all elements with a given attribute value.
+     */
+    public function replaceAttributeValue(string $attributeName, string $oldValue, string $newValue): void
+    {
+        $nodes = $this->findElementsByAttributeValue($attributeName, $oldValue);
+        foreach ($nodes as $node) {
+            $node->setAttribute($attributeName, $newValue);
+        }
+    }
+
+    /**
+     * Find elements by text content.
+     * @return array of DOMElement
+     */
+    public function findElementsByTextContent(string $textContent): array
+    {
+        $xpathExpr = sprintf('//*[text()="%s"]', $textContent);
+        $nodes = $this->xpath->query($xpathExpr);
+        $result = [];
+        foreach ($nodes as $node) {
+            $result[] = $node;
+        }
+        return $result;
+    }
+
+    /**
+     * Replace text content for all elements with a given text content.
+     */
+    public function replaceElementTextContent(string $oldText, string $newText): void
+    {
+        $nodes = $this->findElementsByTextContent($oldText);
+        foreach ($nodes as $node) {
+            $node->nodeValue = $newText;
+        }
+    }
+
+
+    /**
      * Register namespaces for XPath queries.
      * @param array $namespaces ['prefix' => 'namespaceURI']
      */
@@ -78,23 +222,7 @@ class Xmltoolkit
         return $isLoaded;
     }
 
-    /**
-     * Save the XML document to a file and ensure it is UTF-8 encoded.
-     */
-    public function saveToFile(string $filePath): bool
-    {
-        $this->dom->encoding = 'UTF-8';
-        return (bool) $this->dom->save($filePath);
-    }
-
-    /**
-     * Returns the XML as a string and ensures it is UTF-8 encoded.
-     */
-    public function saveToString(): string
-    {
-        $this->dom->encoding = 'UTF-8';
-        return $this->dom->saveXML();
-    }
+    // ...existing code...
 
     /**
      * Rename a tag found by an XPath expression.
@@ -105,17 +233,15 @@ class Xmltoolkit
         foreach ($nodes as $node) {
             $newElement = $this->dom->createElement($newTagName);
 
-            // Kopiere alle Attribute
+            // Copy all attributes
             foreach ($node->attributes as $attribute) {
                 $newElement->setAttribute($attribute->name, $attribute->value);
             }
-
-            // Kopiere alle Kindknoten
+            // Copy all child nodes
             while ($node->firstChild) {
                 $newElement->appendChild($node->firstChild);
             }
-
-            // Ersetze das alte Element durch das neue
+            // Replace old element with new
             $node->parentNode->replaceChild($newElement, $node);
         }
     }
@@ -179,11 +305,10 @@ class Xmltoolkit
         $nodes = $this->xpath->query($xpathExpression);
 
         foreach ($nodes as $node) {
-            // Erstelle ein Fragment für den HTML-String
+            // Create fragment for HTML string
             $fragment = $this->dom->createDocumentFragment();
             $fragment->appendXML($htmlString);
-
-            // Füge das Fragment in das aktuelle XML-Dokument ein
+            // Append fragment to current XML document
             $node->appendChild($fragment);
         }
     }
@@ -208,8 +333,6 @@ class Xmltoolkit
         foreach ($nodes as $node) {
             // Create the new node that wraps the element
             $wrapper = $this->dom->createElement($wrapperTagName);
-
-            // Copy the current element into the wrapper
             $node->parentNode->replaceChild($wrapper, $node);
             $wrapper->appendChild($node);
         }
@@ -229,7 +352,6 @@ class Xmltoolkit
             while ($node->firstChild) {
                 $parent->insertBefore($node->firstChild, $node);
             }
-
             // Remove the empty element itself
             $parent->removeChild($node);
         }

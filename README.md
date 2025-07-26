@@ -14,18 +14,34 @@ composer require ottosmops/xmltoolkit
 ```
 
 ## Usage
+$elements = $xml->findElementsByAttributeRegex('type', '/^sp.*/');
+$xml->replaceAttributeValueRegex('type', '/^sp.*/', 'normal');
+$elements = $xml->findElementsByTextRegex('/old.*/');
+$xml->replaceElementTextRegex('/old.*/', 'newtext');
 
-```php 
-<?php
+```php
 require 'vendor/autoload.php';
-
 use Ottosmops\Xmltoolkit;
 
 $xml = new Xmltoolkit();
 $xml->loadFromFile('example.xml');
 $xml->renameTagByXPath('//a', 'ref');
-$xml->saveToFile('example.xml');
+$xml->saveToFile('example.xml', true); // pretty print
 
+// Find elements by attribute value
+$elements = $xml->findElementsByAttributeValue('type', 'special');
+
+// Replace attribute value
+$xml->replaceAttributeValue('type', 'special', 'normal');
+
+// Find elements by text content
+$elements = $xml->findElementsByTextContent('oldtext');
+
+// Replace text content
+$xml->replaceElementTextContent('oldtext', 'newtext');
+
+// Save as pretty-printed string
+$prettyXml = $xml->saveToString(true);
 ```
 
 ## Namespace Support
@@ -40,6 +56,7 @@ $nodes = $xml->queryXPath('//ns:tag');
 ```
 
 ## Methods
+...existing code...
 
 Load an XML file into the DOM object and ensure it is UTF-8 encoded.
 
@@ -62,13 +79,36 @@ public function loadFromFragment(string $xmlFragment): bool
 Save the XML document to a file and ensure it is UTF-8 encoded.
 
 ```php
-public function saveToFile(string $filePath): bool
+public function saveToFile(string $filePath, bool $prettyPrint = false): bool
 ```
 
 Returns the XML as a string and ensures it is UTF-8 encoded.
 
 ```php
-public function saveToString(): string
+public function saveToString(bool $prettyPrint = false): string
+```
+Find elements by attribute value.
+
+```php
+public function findElementsByAttributeValue(string $attributeName, string $attributeValue): array
+```
+
+Replace attribute value for all elements with a given attribute value.
+
+```php
+public function replaceAttributeValue(string $attributeName, string $oldValue, string $newValue): void
+```
+
+Find elements by text content.
+
+```php
+public function findElementsByTextContent(string $textContent): array
+```
+
+Replace text content for all elements with a given text content.
+
+```php
+public function replaceElementTextContent(string $oldText, string $newText): void
 ```
 
 Rename a tag found by an XPath expression.
@@ -128,8 +168,43 @@ public function unwrapElementByXPath(string $xpathExpression): void
 
 ## Tests
 
-Run the tests with PHPUnit:
 
+## Regex Features
+
+### Methods
+
+Find elements by attribute value using regex:
+```php
+public function findElementsByAttributeRegex(string $attributeName, string $pattern): array
+```
+
+Replace attribute value using regex:
+```php
+public function replaceAttributeValueRegex(string $attributeName, string $pattern, string $replacement): void
+```
+
+Find elements by text content using regex:
+```php
+public function findElementsByTextRegex(string $pattern): array
+```
+
+Replace text content using regex:
+```php
+public function replaceElementTextRegex(string $pattern, string $replacement): void
+```
+
+### Usage
+
+```php
+$elements = $xml->findElementsByAttributeRegex('type', '/^sp.*/');
+$xml->replaceAttributeValueRegex('type', '/^sp.*/', 'normal');
+$elements = $xml->findElementsByTextRegex('/old.*/');
+$xml->replaceElementTextRegex('/old.*/', 'newtext');
+```
+
+### Tests
+
+Run the tests with PHPUnit:
 ```sh
 vendor/bin/phpunit
 ```
