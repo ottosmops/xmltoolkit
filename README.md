@@ -66,6 +66,32 @@ $xml->saveToFile('letter.xml');
 
 The output keeps the source's XML declaration (or its absence), its final newline (or its absence) and its non-ASCII character references such as `&#x200A;`. A restored reference replaces every occurrence of that character, including ones the source had written literally. What DOM cannot keep: line breaks and spaces inside start tags, `<a></a>` (becomes `<a/>`) and whitespace after the root element.
 
+### Wrap Text Matches
+
+Tag names in running text, e.g. persons in TEI, deciding match by match:
+
+```php
+$xml = new Xmltoolkit();
+$xml->registerNamespaces(['tei' => 'http://www.tei-c.org/ns/1.0']);
+$xml->preserveFormatting();
+$xml->loadFromFile('letter.xml');
+
+$count = $xml->wrapTextMatches(
+    "/(?<!\w)Thurneysen(?:'?e?n?s)?(?!\w)/u",
+    function (string $match, \DOMText $node, int $line) {
+        // ask the user, look up an ID ... or return null to leave the match
+        $persName = $node->ownerDocument->createElementNS($node->lookupNamespaceURI(null), 'persName');
+        $persName->setAttribute('ref', 'kbga-actors-403');
+        return $persName;
+    },
+    within: '//tei:text',
+    exclude: ['tei:bibl', 'tei:note', 'tei:persName'],
+);
+$xml->saveToFile('letter.xml');
+```
+
+Only text nodes are searched, so matches inside tags, attributes or excluded elements cannot occur, and names spanning element boundaries (`Eduard <lb/>Thurneysen`) are not found. Create the element in the document's namespace (`createElementNS`), otherwise it is serialized with `xmlns=""`. `$line` is the match's line in the source, computed from the parent element's start tag; line breaks inside start tags of preceding siblings shift it, and it is 0 below elements created after loading.
+
 ### Regex
 
 ```php
@@ -211,6 +237,12 @@ Append an HTML string to the nodes found by an XPath expression (as last child).
 
 ```php
 public function appendHtmlToXPath(string $xpathExpression, string $htmlString): void
+```
+
+Wrap regex matches in text nodes with the elements a callback returns (see [Wrap Text Matches](#wrap-text-matches)). Returns the number of wrapped matches.
+
+```php
+public function wrapTextMatches(string $pattern, callable $wrapper, string $within = '/', array $exclude = []): int
 ```
 
 Remove an element found by an XPath expression.

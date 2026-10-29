@@ -192,6 +192,63 @@ class XmltoolkitTest extends TestCase
         $this->assertStringNotContainsString('&#x200A;', $this->xmltoolkit->saveToString());
     }
 
+    private const TEI = '<TEI xmlns="http://www.tei-c.org/ns/1.0"><teiHeader><title>Barth</title></teiHeader><text><p>Brief an Barth über Barths Römerbrief.</p><bibl>Barth 1922</bibl><p><persName>Barth</persName></p></text></TEI>';
+
+    public function testWrapTextMatches()
+    {
+        $this->xmltoolkit->registerNamespaces(['tei' => 'http://www.tei-c.org/ns/1.0']);
+        $this->xmltoolkit->loadFromString(self::TEI);
+        $count = $this->xmltoolkit->wrapTextMatches(
+            "/(?<!\w)Barth(?:'?e?n?s)?(?!\w)/u",
+            function (string $match, \DOMText $node) {
+                $element = $node->ownerDocument->createElementNS($node->lookupNamespaceURI(null), 'persName');
+                $element->setAttribute('ref', 'p1');
+                return $element;
+            },
+            '//tei:text',
+            ['tei:bibl', 'tei:persName'],
+        );
+        $this->assertSame(2, $count);
+        $this->assertStringContainsString('<p>Brief an <persName ref="p1">Barth</persName> über <persName ref="p1">Barths</persName> Römerbrief.</p>', $this->xmltoolkit->saveToString());
+        $this->assertStringContainsString('<title>Barth</title>', $this->xmltoolkit->saveToString());
+        $this->assertStringContainsString('<bibl>Barth 1922</bibl>', $this->xmltoolkit->saveToString());
+        $this->assertStringContainsString('<p><persName>Barth</persName></p>', $this->xmltoolkit->saveToString());
+    }
+
+    public function testWrapTextMatchesSkipsWhenCallbackReturnsNull()
+    {
+        $this->xmltoolkit->loadFromString('<root><p>Barth und Barth und Barth</p></root>');
+        $calls = 0;
+        $count = $this->xmltoolkit->wrapTextMatches('/Barth/', function (string $match, \DOMText $node) use (&$calls) {
+            return ++$calls === 2 ? $node->ownerDocument->createElement('seg') : null;
+        });
+        $this->assertSame(3, $calls);
+        $this->assertSame(1, $count);
+        $this->assertStringContainsString('<p>Barth und <seg>Barth</seg> und Barth</p>', $this->xmltoolkit->saveToString());
+    }
+
+    public function testWrapTextMatchesPassesSourceLine()
+    {
+        $this->xmltoolkit->loadFromString("<root>\n<p>eins\nBarth\n\ndrei Barth</p>\n</root>");
+        $lines = [];
+        $this->xmltoolkit->wrapTextMatches('/Barth/', function (string $match, \DOMText $node, int $line) use (&$lines) {
+            $lines[] = $line;
+            return null;
+        });
+        $this->assertSame([3, 5], $lines);
+    }
+
+    public function testWrapTextMatchesPassesSourceLineInLongText()
+    {
+        $this->xmltoolkit->loadFromString("<root>\n<p>Anfang</p>\n<p>" . str_repeat("Zeile mit etwas Text\n", 2000) . "Barth</p>\n</root>");
+        $lines = [];
+        $this->xmltoolkit->wrapTextMatches('/Barth/', function (string $match, \DOMText $node, int $line) use (&$lines) {
+            $lines[] = $line;
+            return null;
+        });
+        $this->assertSame([2003], $lines);
+    }
+
     public function testQueryXpathWithNamespace()
     {
         $xmlString = '<?xml version="1.0"?><root xmlns:ns="http://example.com/ns"><ns:tag>data</ns:tag></root>';

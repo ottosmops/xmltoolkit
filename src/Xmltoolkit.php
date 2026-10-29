@@ -181,7 +181,7 @@ class Xmltoolkit
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
         $this->xpath = null;
         $this->source = null;
-        $isLoaded = $this->dom->load($filePath);
+        $isLoaded = $this->dom->load($filePath, LIBXML_BIGLINES);
         if ($isLoaded) {
             $this->rememberFormat((string) file_get_contents($filePath));
             $this->xpath = new \DOMXPath($this->dom);
@@ -202,7 +202,7 @@ class Xmltoolkit
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
         $this->xpath = null;
         $this->source = null;
-        $isLoaded = $this->dom->loadXML($xmlString);
+        $isLoaded = $this->dom->loadXML($xmlString, LIBXML_BIGLINES);
         if ($isLoaded) {
             $this->rememberFormat($xmlString);
             $this->xpath = new \DOMXPath($this->dom);
@@ -369,6 +369,86 @@ class Xmltoolkit
             // Remove the empty element itself
             $parent->removeChild($node);
         }
+    }
+
+    /**
+     * Wrap regex matches in text nodes with elements returned by a callback.
+     *
+     * Only text below $within is searched; text with an ancestor matching one of the $exclude
+     * name tests (e.g. 'tei:bibl') is skipped. Matches spanning element boundaries are not found.
+     * The callback receives the match, its text node and the match's line in the source
+     * (best effort, see lineOf(); 0 if the parent element was created after loading) and returns an empty element to wrap the match in,
+     * or null to leave it.
+     *
+     * @param callable(string, \DOMText, int): ?\DOMElement $wrapper
+     * @param array<string> $exclude XPath name tests
+     * @return int number of wrapped matches
+     */
+    public function wrapTextMatches(string $pattern, callable $wrapper, string $within = '/', array $exclude = []): int
+    {
+        $predicate = '';
+        if ($exclude) {
+            $predicate = '[' . implode(' and ', array_map(fn ($name) => "not(ancestor::$name)", $exclude)) . ']';
+        }
+        $textNodes = [];
+        foreach ($this->query($within) as $context) {
+            foreach ($this->xpath->query('.//text()' . $predicate, $context) as $textNode) {
+                $textNodes[] = $textNode;
+            }
+        }
+
+        $count = 0;
+        foreach ($textNodes as $textNode) {
+            $data = $textNode->data;
+            if (!preg_match_all($pattern, $data, $matches, PREG_OFFSET_CAPTURE)) {
+                continue;
+            }
+            $parent = $textNode->parentNode;
+            $position = 0;
+            foreach ($matches[0] as [$match, $offset]) {
+                if ($match === '') {
+                    continue;
+                }
+                $element = $wrapper($match, $textNode, $this->lineOf($textNode, $offset));
+                if ($element === null) {
+                    continue;
+                }
+                if ($element->ownerDocument !== $this->dom) {
+                    $element = $this->dom->importNode($element, true);
+                }
+                if ($offset > $position) {
+                    $parent->insertBefore($this->dom->createTextNode(substr($data, $position, $offset - $position)), $textNode);
+                }
+                $element->appendChild($this->dom->createTextNode($match));
+                $parent->insertBefore($element, $textNode);
+                $position = $offset + strlen($match);
+                $count++;
+            }
+            if ($position > 0) {
+                if ($position < strlen($data)) {
+                    $parent->insertBefore($this->dom->createTextNode(substr($data, $position)), $textNode);
+                }
+                $parent->removeChild($textNode);
+            }
+        }
+        return $count;
+    }
+
+    /**
+     * Source line of an offset in a text node, counted from the parent's start tag.
+     * libxml's line of a text node itself is unreliable for long text; that of an element is not.
+     * Off by the line breaks inside start tags of preceding siblings; 0 if the parent was created after loading.
+     */
+    private function lineOf(\DOMText $textNode, int $offset): int
+    {
+        $line = $textNode->parentNode->getLineNo();
+        if ($line === 0) {
+            return 0;
+        }
+        for ($sibling = $textNode->parentNode->firstChild; $sibling !== $textNode; $sibling = $sibling->nextSibling) {
+            $line += substr_count($this->dom->saveXML($sibling), "\n");
+        }
+        return $line + substr_count($textNode->data, "\n", 0, $offset);
     }
 
     /**
