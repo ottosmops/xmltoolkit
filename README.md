@@ -78,7 +78,7 @@ $xml->loadFromFile('letter.xml');
 
 $count = $xml->wrapTextMatches(
     "/(?<!\w)Thurneysen(?:'?e?n?s)?(?!\w)/u",
-    function (string $match, \DOMText $node, int $line) {
+    function (string $match, \DOMText $node, int $line, int $offset) {
         // ask the user, look up an ID ... or return null to leave the match
         $persName = $node->ownerDocument->createElementNS($node->lookupNamespaceURI(null), 'persName');
         $persName->setAttribute('ref', 'kbga-actors-403');
@@ -90,7 +90,7 @@ $count = $xml->wrapTextMatches(
 $xml->saveToFile('letter.xml');
 ```
 
-Only text nodes are searched, so matches inside tags, attributes or excluded elements cannot occur, and names spanning element boundaries (`Eduard <lb/>Thurneysen`) are not found. Create the element in the document's namespace (`createElementNS`), otherwise it is serialized with `xmlns=""`. `$line` is the match's line in the source, computed from the parent element's start tag; line breaks inside start tags of preceding siblings shift it, and it is 0 below elements created after loading.
+Only text nodes are searched, so matches inside tags, attributes or excluded elements cannot occur, and names spanning element boundaries (`Eduard <lb/>Thurneysen`) are not found. Create the element in the document's namespace (`createElementNS`), otherwise it is serialized with `xmlns=""`. `$offset` is the byte offset of the match in `$node->data`. `$line` is the match's line in the source, computed from the parent element's start tag; line breaks inside start tags of preceding siblings shift it, and it is 0 below elements created after loading.
 
 ### Regex
 

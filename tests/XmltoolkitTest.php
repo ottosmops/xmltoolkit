@@ -238,6 +238,17 @@ class XmltoolkitTest extends TestCase
         $this->assertSame([3, 5], $lines);
     }
 
+    public function testWrapTextMatchesPassesByteOffset()
+    {
+        $this->xmltoolkit->loadFromString('<root><p>Brief an Barth über Barth</p></root>');
+        $offsets = [];
+        $this->xmltoolkit->wrapTextMatches('/Barth/', function (string $match, \DOMText $node, int $line, int $offset) use (&$offsets) {
+            $offsets[] = $offset;
+            return null;
+        });
+        $this->assertSame([9, 21], $offsets);
+    }
+
     public function testWrapTextMatchesPassesSourceLineInLongText()
     {
         $this->xmltoolkit->loadFromString("<root>\n<p>Anfang</p>\n<p>" . str_repeat("Zeile mit etwas Text\n", 2000) . "Barth</p>\n</root>");

@@ -376,11 +376,11 @@ class Xmltoolkit
      *
      * Only text below $within is searched; text with an ancestor matching one of the $exclude
      * name tests (e.g. 'tei:bibl') is skipped. Matches spanning element boundaries are not found.
-     * The callback receives the match, its text node and the match's line in the source
-     * (best effort, see lineOf(); 0 if the parent element was created after loading) and returns an empty element to wrap the match in,
-     * or null to leave it.
+     * The callback receives the match, its text node, the match's line in the source
+     * (best effort, see lineOf(); 0 if the parent element was created after loading) and its byte offset
+     * in the text node's data, and returns an empty element to wrap the match in, or null to leave it.
      *
-     * @param callable(string, \DOMText, int): ?\DOMElement $wrapper
+     * @param callable(string, \DOMText, int, int): ?\DOMElement $wrapper
      * @param array<string> $exclude XPath name tests
      * @return int number of wrapped matches
      */
@@ -409,7 +409,7 @@ class Xmltoolkit
                 if ($match === '') {
                     continue;
                 }
-                $element = $wrapper($match, $textNode, $this->lineOf($textNode, $offset));
+                $element = $wrapper($match, $textNode, $this->lineOf($textNode, $offset), $offset);
                 if ($element === null) {
                     continue;
                 }
