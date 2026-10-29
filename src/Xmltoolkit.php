@@ -71,7 +71,7 @@ class Xmltoolkit
             $node->nodeValue = preg_replace($pattern, $replacement, $node->nodeValue);
         }
     }
-// ...existing code...
+
     /**
      * Returns the XML as a string and ensures it is UTF-8 encoded. Optionally pretty-printed.
      */
@@ -222,8 +222,6 @@ class Xmltoolkit
         return $isLoaded;
     }
 
-    // ...existing code...
-
     /**
      * Rename a tag found by an XPath expression.
      */
@@ -298,7 +296,7 @@ class Xmltoolkit
     }
 
     /**
-     * Inserts an HTML string after the nodes found by an XPath expression.
+     * Appends an HTML string as last child to the nodes found by an XPath expression.
      */
     public function appendHtmlToXPath(string $xpathExpression, string $htmlString): void
     {

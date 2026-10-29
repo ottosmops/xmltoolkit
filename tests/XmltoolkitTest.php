@@ -10,8 +10,6 @@ use PHPUnit\Framework\Attributes\CoversClass;
 #[CoversClass(Xmltoolkit::class)]
 class XmltoolkitTest extends TestCase
 {
-// ...existing code...
-// ...existing code...
     // --- Regex-Tests ---
 
     public function testFindElementsByAttributeRegex()

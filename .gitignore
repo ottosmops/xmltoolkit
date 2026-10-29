@@ -14,3 +14,7 @@ composer.lock
 ##### Composer
 composer.phar
 /vendor/
+
+##### Claude
+CLAUDE.md
+.claude/

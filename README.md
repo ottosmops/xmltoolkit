@@ -14,14 +14,11 @@ composer require ottosmops/xmltoolkit
 ```
 
 ## Usage
-$elements = $xml->findElementsByAttributeRegex('type', '/^sp.*/');
-$xml->replaceAttributeValueRegex('type', '/^sp.*/', 'normal');
-$elements = $xml->findElementsByTextRegex('/old.*/');
-$xml->replaceElementTextRegex('/old.*/', 'newtext');
 
 ```php
 require 'vendor/autoload.php';
-use Ottosmops\Xmltoolkit;
+
+use Ottosmops\Xmltoolkit\Xmltoolkit;
 
 $xml = new Xmltoolkit();
 $xml->loadFromFile('example.xml');
@@ -44,19 +41,29 @@ $xml->replaceElementTextContent('oldtext', 'newtext');
 $prettyXml = $xml->saveToString(true);
 ```
 
-## Namespace Support
+### Namespace Support
 
 You can register XML namespaces for XPath queries:
 
 ```php
-$xml = new Ottosmops\Xmltoolkit();
+$xml = new Xmltoolkit();
 $xml->registerNamespaces(['ns' => 'http://example.com/ns']);
 $xml->loadFromFile('example.xml');
 $nodes = $xml->queryXPath('//ns:tag');
 ```
 
+### Regex
+
+```php
+$elements = $xml->findElementsByAttributeRegex('type', '/^sp.*/');
+$xml->replaceAttributeValueRegex('type', '/^sp.*/', 'normal');
+$elements = $xml->findElementsByTextRegex('/old.*/');
+$xml->replaceElementTextRegex('/old.*/', 'newtext');
+```
+
 ## Methods
-...existing code...
+
+### Loading and saving
 
 Load an XML file into the DOM object and ensure it is UTF-8 encoded.
 
@@ -70,7 +77,7 @@ Load an XML string into the DOM object and ensure it is UTF-8 encoded.
 public function loadFromString(string $xmlString): bool
 ```
 
-Load an XML/HTML Fragment
+Load an XML/HTML fragment. The fragment is wrapped in a `<root>` element.
 
 ```php
 public function loadFromFragment(string $xmlFragment): bool
@@ -82,11 +89,20 @@ Save the XML document to a file and ensure it is UTF-8 encoded.
 public function saveToFile(string $filePath, bool $prettyPrint = false): bool
 ```
 
-Returns the XML as a string and ensures it is UTF-8 encoded.
+Return the XML as a string and ensure it is UTF-8 encoded.
 
 ```php
 public function saveToString(bool $prettyPrint = false): string
 ```
+
+Register namespaces for XPath queries (`['prefix' => 'namespaceURI']`). Can be called before or after loading.
+
+```php
+public function registerNamespaces(array $namespaces): void
+```
+
+### Find and replace
+
 Find elements by attribute value.
 
 ```php
@@ -111,11 +127,44 @@ Replace text content for all elements with a given text content.
 public function replaceElementTextContent(string $oldText, string $newText): void
 ```
 
+### Find and replace with regex
+
+Find elements by attribute value using regex.
+
+```php
+public function findElementsByAttributeRegex(string $attributeName, string $pattern): array
+```
+
+Replace attribute value using regex.
+
+```php
+public function replaceAttributeValueRegex(string $attributeName, string $pattern, string $replacement): void
+```
+
+Find elements by text content using regex. Only elements without child elements are matched.
+
+```php
+public function findElementsByTextRegex(string $pattern): array
+```
+
+Replace text content using regex.
+
+```php
+public function replaceElementTextRegex(string $pattern, string $replacement): void
+```
+
+### XPath
+
+Run an arbitrary XPath query and return the found nodes as an array of XML strings.
+
+```php
+public function queryXPath(string $xpathExpression): array
+```
+
 Rename a tag found by an XPath expression.
 
 ```php
-public function renameTagByXPath(string $xpathExpression, string $newTagName): 
-void
+public function renameTagByXPath(string $xpathExpression, string $newTagName): void
 ```
 
 Rename an attribute found by an XPath expression.
@@ -136,22 +185,16 @@ Remove an attribute from a tag found by an XPath expression.
 public function removeAttributeByXPath(string $xpathExpression, string $attributeName): void
 ```
 
-Does an arbitrary XPath query and returns the found nodes as an array.
-
-```php
-public function queryXPath(string $xpathExpression): array
-```
-
-Inserts an HTML string after the nodes found by an XPath expression.
+Append an HTML string to the nodes found by an XPath expression (as last child).
 
 ```php
 public function appendHtmlToXPath(string $xpathExpression, string $htmlString): void
 ```
 
-Removes an element found by an XPath expression.
-```php
+Remove an element found by an XPath expression.
 
-    public function removeElementByXPath(string $xpathExpression): void
+```php
+public function removeElementByXPath(string $xpathExpression): void
 ```
 
 Wrap an element found by an XPath expression with a new element.
@@ -168,43 +211,8 @@ public function unwrapElementByXPath(string $xpathExpression): void
 
 ## Tests
 
-
-## Regex Features
-
-### Methods
-
-Find elements by attribute value using regex:
-```php
-public function findElementsByAttributeRegex(string $attributeName, string $pattern): array
-```
-
-Replace attribute value using regex:
-```php
-public function replaceAttributeValueRegex(string $attributeName, string $pattern, string $replacement): void
-```
-
-Find elements by text content using regex:
-```php
-public function findElementsByTextRegex(string $pattern): array
-```
-
-Replace text content using regex:
-```php
-public function replaceElementTextRegex(string $pattern, string $replacement): void
-```
-
-### Usage
-
-```php
-$elements = $xml->findElementsByAttributeRegex('type', '/^sp.*/');
-$xml->replaceAttributeValueRegex('type', '/^sp.*/', 'normal');
-$elements = $xml->findElementsByTextRegex('/old.*/');
-$xml->replaceElementTextRegex('/old.*/', 'newtext');
-```
-
-### Tests
-
 Run the tests with PHPUnit:
+
 ```sh
 vendor/bin/phpunit
 ```
