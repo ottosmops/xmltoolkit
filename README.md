@@ -65,6 +65,8 @@ $xml->replaceElementTextRegex('/old.*/', 'newtext');
 
 ### Loading and saving
 
+All other methods throw a `LogicException` if no document has been loaded successfully.
+
 Load an XML file into the DOM object and ensure it is UTF-8 encoded.
 
 ```php

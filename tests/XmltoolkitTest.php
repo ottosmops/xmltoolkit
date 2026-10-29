@@ -111,6 +111,38 @@ class XmltoolkitTest extends TestCase
         $this->assertStringContainsString('<item>bar</item>', $result);
     }
 
+    public function testFindElementsByAttributeValueWithQuotes()
+    {
+        $xmlString = '<root><item type="a&quot;b">A</item><item type="c\'d">B</item><item type="e&quot;f\'g">C</item></root>';
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->assertEquals('A', $this->xmltoolkit->findElementsByAttributeValue('type', 'a"b')[0]->nodeValue);
+        $this->assertEquals('B', $this->xmltoolkit->findElementsByAttributeValue('type', "c'd")[0]->nodeValue);
+        $this->assertEquals('C', $this->xmltoolkit->findElementsByAttributeValue('type', 'e"f\'g')[0]->nodeValue);
+    }
+
+    public function testFindElementsByTextContentWithQuotes()
+    {
+        $xmlString = '<root><item>say "hi"</item><item>it\'s</item><item>"it\'s"</item></root>';
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->assertCount(1, $this->xmltoolkit->findElementsByTextContent('say "hi"'));
+        $this->assertCount(1, $this->xmltoolkit->findElementsByTextContent("it's"));
+        $this->assertCount(1, $this->xmltoolkit->findElementsByTextContent('"it\'s"'));
+    }
+
+    public function testThrowsWhenNothingLoaded()
+    {
+        $this->expectException(\LogicException::class);
+        $this->xmltoolkit->queryXPath('//item');
+    }
+
+    public function testThrowsAfterFailedLoad()
+    {
+        $this->xmltoolkit->loadFromString('<root><item/></root>');
+        $this->assertFalse(@$this->xmltoolkit->loadFromString('<root>'));
+        $this->expectException(\LogicException::class);
+        $this->xmltoolkit->saveToString();
+    }
+
     public function testQueryXpathWithNamespace()
     {
         $xmlString = '<?xml version="1.0"?><root xmlns:ns="http://example.com/ns"><ns:tag>data</ns:tag></root>';

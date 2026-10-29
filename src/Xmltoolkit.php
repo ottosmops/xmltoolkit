@@ -14,7 +14,7 @@ class Xmltoolkit
     public function findElementsByAttributeRegex(string $attributeName, string $pattern): array
     {
         $xpathExpr = sprintf('//*[@%s]', $attributeName);
-        $nodes = $this->xpath->query($xpathExpr);
+        $nodes = $this->query($xpathExpr);
         $result = [];
         foreach ($nodes as $node) {
             $value = $node->getAttribute($attributeName);
@@ -44,7 +44,7 @@ class Xmltoolkit
      */
     public function findElementsByTextRegex(string $pattern): array
     {
-        $nodes = $this->xpath->query('//*');
+        $nodes = $this->query('//*');
         $result = [];
         foreach ($nodes as $node) {
             $hasElementChild = false;
@@ -77,6 +77,7 @@ class Xmltoolkit
      */
     public function saveToString(bool $prettyPrint = false): string
     {
+        $this->ensureLoaded();
         $this->dom->encoding = 'UTF-8';
         if ($prettyPrint) {
             $this->dom->preserveWhiteSpace = false;
@@ -90,6 +91,7 @@ class Xmltoolkit
      */
     public function saveToFile(string $filePath, bool $prettyPrint = false): bool
     {
+        $this->ensureLoaded();
         $this->dom->encoding = 'UTF-8';
         if ($prettyPrint) {
             $this->dom->preserveWhiteSpace = false;
@@ -104,8 +106,8 @@ class Xmltoolkit
      */
     public function findElementsByAttributeValue(string $attributeName, string $attributeValue): array
     {
-        $xpathExpr = sprintf('//*[@%s="%s"]', $attributeName, $attributeValue);
-        $nodes = $this->xpath->query($xpathExpr);
+        $xpathExpr = sprintf('//*[@%s=%s]', $attributeName, $this->xpathLiteral($attributeValue));
+        $nodes = $this->query($xpathExpr);
         $result = [];
         foreach ($nodes as $node) {
             $result[] = $node;
@@ -130,8 +132,8 @@ class Xmltoolkit
      */
     public function findElementsByTextContent(string $textContent): array
     {
-        $xpathExpr = sprintf('//*[text()="%s"]', $textContent);
-        $nodes = $this->xpath->query($xpathExpr);
+        $xpathExpr = sprintf('//*[text()=%s]', $this->xpathLiteral($textContent));
+        $nodes = $this->query($xpathExpr);
         $result = [];
         foreach ($nodes as $node) {
             $result[] = $node;
@@ -171,6 +173,7 @@ class Xmltoolkit
     public function loadFromFile(string $filePath): bool
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
+        $this->xpath = null;
         $isLoaded = $this->dom->load($filePath);
         if ($isLoaded) {
             $this->xpath = new \DOMXPath($this->dom);
@@ -189,6 +192,7 @@ class Xmltoolkit
     public function loadFromString(string $xmlString): bool
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
+        $this->xpath = null;
         $isLoaded = $this->dom->loadXML($xmlString);
         if ($isLoaded) {
             $this->xpath = new \DOMXPath($this->dom);
@@ -204,6 +208,7 @@ class Xmltoolkit
     public function loadFromFragment(string $xmlFragment): bool
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
+        $this->xpath = null;
         $this->dom->loadXML('<root></root>');
 
         $fragment = $this->dom->createDocumentFragment();
@@ -227,7 +232,7 @@ class Xmltoolkit
      */
     public function renameTagByXPath(string $xpathExpression, string $newTagName): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         foreach ($nodes as $node) {
             $newElement = $this->dom->createElement($newTagName);
 
@@ -249,7 +254,7 @@ class Xmltoolkit
      */
     public function renameAttributeByXPath(string $xpathExpression, string $oldAttributeName, string $newAttributeName): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
 
         foreach ($nodes as $node) {
             if ($node->hasAttribute($oldAttributeName)) {
@@ -265,7 +270,7 @@ class Xmltoolkit
      */
     public function addAttributeByXPath(string $xpathExpression, string $attributeName, string $attributeValue): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         foreach ($nodes as $node) {
             $node->setAttribute($attributeName, $attributeValue);
         }
@@ -276,7 +281,7 @@ class Xmltoolkit
      */
     public function removeAttributeByXPath(string $xpathExpression, string $attributeName): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         foreach ($nodes as $node) {
             $node->removeAttribute($attributeName);
         }
@@ -287,7 +292,7 @@ class Xmltoolkit
      */
     public function queryXPath(string $xpathExpression): array
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         $result = [];
         foreach ($nodes as $node) {
             $result[] = $this->dom->saveXML($node);
@@ -300,7 +305,7 @@ class Xmltoolkit
      */
     public function appendHtmlToXPath(string $xpathExpression, string $htmlString): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
 
         foreach ($nodes as $node) {
             // Create fragment for HTML string
@@ -316,7 +321,7 @@ class Xmltoolkit
      */
     public function removeElementByXPath(string $xpathExpression): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         foreach ($nodes as $node) {
             $node->parentNode->removeChild($node);
         }
@@ -327,7 +332,7 @@ class Xmltoolkit
      */
     public function wrapElementByXPath(string $xpathExpression, string $wrapperTagName): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
         foreach ($nodes as $node) {
             // Create the new node that wraps the element
             $wrapper = $this->dom->createElement($wrapperTagName);
@@ -341,7 +346,7 @@ class Xmltoolkit
      */
     public function unwrapElementByXPath(string $xpathExpression): void
     {
-        $nodes = $this->xpath->query($xpathExpression);
+        $nodes = $this->query($xpathExpression);
 
         foreach ($nodes as $node) {
             $parent = $node->parentNode;
@@ -353,5 +358,38 @@ class Xmltoolkit
             // Remove the empty element itself
             $parent->removeChild($node);
         }
+    }
+
+    /**
+     * Run an XPath query on the loaded document.
+     */
+    private function query(string $xpathExpression): \DOMNodeList
+    {
+        $this->ensureLoaded();
+        return $this->xpath->query($xpathExpression);
+    }
+
+    /**
+     * Throw if no document has been loaded successfully.
+     */
+    private function ensureLoaded(): void
+    {
+        if ($this->xpath === null) {
+            throw new \LogicException('No XML document loaded. Call loadFromFile(), loadFromString() or loadFromFragment() first.');
+        }
+    }
+
+    /**
+     * Quote a string as XPath literal, using concat() if it contains both quote types.
+     */
+    private function xpathLiteral(string $value): string
+    {
+        if (!str_contains($value, '"')) {
+            return '"' . $value . '"';
+        }
+        if (!str_contains($value, "'")) {
+            return "'" . $value . "'";
+        }
+        return 'concat("' . str_replace('"', '", \'"\', "', $value) . '")';
     }
 }
