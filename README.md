@@ -52,6 +52,20 @@ $xml->loadFromFile('example.xml');
 $nodes = $xml->queryXPath('//ns:tag');
 ```
 
+### Preserve Formatting
+
+When editing source files under version control, keep the diff small:
+
+```php
+$xml = new Xmltoolkit();
+$xml->preserveFormatting();
+$xml->loadFromFile('letter.xml');
+// ... edit ...
+$xml->saveToFile('letter.xml');
+```
+
+The output keeps the source's XML declaration (or its absence), its final newline (or its absence) and its non-ASCII character references such as `&#x200A;`. A restored reference replaces every occurrence of that character, including ones the source had written literally. What DOM cannot keep: line breaks and spaces inside start tags, `<a></a>` (becomes `<a/>`) and whitespace after the root element.
+
 ### Regex
 
 ```php
@@ -101,6 +115,12 @@ Register namespaces for XPath queries (`['prefix' => 'namespaceURI']`). Can be c
 
 ```php
 public function registerNamespaces(array $namespaces): void
+```
+
+Keep the source's XML declaration, final newline and character references when saving (see [Preserve Formatting](#preserve-formatting)). Can be called before or after loading.
+
+```php
+public function preserveFormatting(bool $preserve = true): void
 ```
 
 ### Find and replace

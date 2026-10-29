@@ -7,6 +7,18 @@ class Xmltoolkit
     private $dom;
     private $xpath;
     private $namespaces = [];
+    private $preserveFormatting = false;
+    private $source = null;
+
+    /**
+     * Keep the source's XML declaration, final newline and character references when saving.
+     * Restored references apply to every occurrence of the character, also where the source had it literally.
+     */
+    public function preserveFormatting(bool $preserve = true): void
+    {
+        $this->preserveFormatting = $preserve;
+    }
+
     /**
      * Find elements by attribute value using regex.
      * @return array of DOMElement
@@ -83,7 +95,7 @@ class Xmltoolkit
             $this->dom->preserveWhiteSpace = false;
             $this->dom->formatOutput = true;
         }
-        return $this->dom->saveXML();
+        return $this->restoreFormat($this->dom->saveXML());
     }
 
     /**
@@ -91,13 +103,7 @@ class Xmltoolkit
      */
     public function saveToFile(string $filePath, bool $prettyPrint = false): bool
     {
-        $this->ensureLoaded();
-        $this->dom->encoding = 'UTF-8';
-        if ($prettyPrint) {
-            $this->dom->preserveWhiteSpace = false;
-            $this->dom->formatOutput = true;
-        }
-        return (bool) $this->dom->save($filePath);
+        return file_put_contents($filePath, $this->saveToString($prettyPrint)) !== false;
     }
 
     /**
@@ -174,8 +180,10 @@ class Xmltoolkit
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
         $this->xpath = null;
+        $this->source = null;
         $isLoaded = $this->dom->load($filePath);
         if ($isLoaded) {
+            $this->rememberFormat((string) file_get_contents($filePath));
             $this->xpath = new \DOMXPath($this->dom);
             if (!empty($this->namespaces)) {
                 foreach ($this->namespaces as $prefix => $uri) {
@@ -193,8 +201,10 @@ class Xmltoolkit
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
         $this->xpath = null;
+        $this->source = null;
         $isLoaded = $this->dom->loadXML($xmlString);
         if ($isLoaded) {
+            $this->rememberFormat($xmlString);
             $this->xpath = new \DOMXPath($this->dom);
             if (!empty($this->namespaces)) {
                 foreach ($this->namespaces as $prefix => $uri) {
@@ -209,6 +219,7 @@ class Xmltoolkit
     {
         $this->dom = new \DOMDocument('1.0', 'UTF-8');
         $this->xpath = null;
+        $this->source = null;
         $this->dom->loadXML('<root></root>');
 
         $fragment = $this->dom->createDocumentFragment();
@@ -391,5 +402,42 @@ class Xmltoolkit
             return "'" . $value . "'";
         }
         return 'concat("' . str_replace('"', '", \'"\', "', $value) . '")';
+    }
+
+    /**
+     * Remember the declaration, final newline and non-ASCII character references of the source.
+     */
+    private function rememberFormat(string $xml): void
+    {
+        preg_match('/^(?:\xEF\xBB\xBF)?<\?xml[^>]*\?>/', $xml, $declaration);
+        $charRefs = [];
+        preg_match_all('/&#(?:x[0-9A-Fa-f]+|[0-9]+);/', $xml, $refs);
+        foreach (array_unique($refs[0]) as $ref) {
+            $char = html_entity_decode($ref, ENT_XML1, 'UTF-8');
+            // ASCII references (&#38;, &#60; …) must stay as libxml escapes them
+            if (strlen($char) > 1 && !isset($charRefs[$char])) {
+                $charRefs[$char] = $ref;
+            }
+        }
+        $this->source = [
+            'declaration' => $declaration[0] ?? null,
+            'finalNewline' => str_ends_with($xml, "\n"),
+            'charRefs' => $charRefs,
+        ];
+    }
+
+    /**
+     * Apply the remembered source format to serialized XML, if preserveFormatting() is on.
+     */
+    private function restoreFormat(string $xml): string
+    {
+        if (!$this->preserveFormatting || $this->source === null) {
+            return $xml;
+        }
+        $xml = preg_replace('/^<\?xml[^>]*\?>\n?/', $this->source['declaration'] === null ? '' : $this->source['declaration'] . "\n", $xml, 1);
+        if (!$this->source['finalNewline']) {
+            $xml = rtrim($xml, "\n");
+        }
+        return strtr($xml, $this->source['charRefs']);
     }
 }

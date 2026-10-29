@@ -143,6 +143,55 @@ class XmltoolkitTest extends TestCase
         $this->xmltoolkit->saveToString();
     }
 
+    public function testPreserveFormattingKeepsMissingDeclarationAndFinalNewline()
+    {
+        $xmlString = '<root><item>A</item></root>';
+        $this->xmltoolkit->preserveFormatting();
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->assertSame($xmlString, $this->xmltoolkit->saveToString());
+    }
+
+    public function testPreserveFormattingKeepsOriginalDeclaration()
+    {
+        $xmlString = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<root><item>A</item></root>\n";
+        $this->xmltoolkit->preserveFormatting();
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->assertSame($xmlString, $this->xmltoolkit->saveToString());
+    }
+
+    public function testPreserveFormattingKeepsCharacterReferences()
+    {
+        $xmlString = '<root><q>&#x00AB;Wir&#x200A;haben&#187;</q><a n="&#x2009;"/>&amp;&#38;</root>';
+        $this->xmltoolkit->preserveFormatting();
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->assertSame('<root><q>&#x00AB;Wir&#x200A;haben&#187;</q><a n="&#x2009;"/>&amp;&amp;</root>', $this->xmltoolkit->saveToString());
+    }
+
+    public function testPreserveFormattingAppliesToSaveToFile()
+    {
+        $filePath = __DIR__ . '/sample_preserve.xml';
+        $xmlString = '<root>&#x200A;</root>';
+        $this->xmltoolkit->preserveFormatting();
+        $this->xmltoolkit->loadFromString($xmlString);
+        $this->xmltoolkit->saveToFile($filePath);
+        $this->assertSame($xmlString, file_get_contents($filePath));
+        unlink($filePath);
+    }
+
+    public function testWithoutPreserveFormattingOutputIsUnchanged()
+    {
+        $this->xmltoolkit->loadFromString('<root>&#x200A;</root>');
+        $this->assertSame("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<root>\u{200A}</root>\n", $this->xmltoolkit->saveToString());
+    }
+
+    public function testFragmentDoesNotInheritFormatOfPreviousDocument()
+    {
+        $this->xmltoolkit->preserveFormatting();
+        $this->xmltoolkit->loadFromString('<root>&#x200A;</root>');
+        $this->xmltoolkit->loadFromFragment("<p>a\u{200A}b</p>");
+        $this->assertStringNotContainsString('&#x200A;', $this->xmltoolkit->saveToString());
+    }
+
     public function testQueryXpathWithNamespace()
     {
         $xmlString = '<?xml version="1.0"?><root xmlns:ns="http://example.com/ns"><ns:tag>data</ns:tag></root>';
